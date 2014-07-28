@@ -2,8 +2,9 @@ require "octane/version"
 
 module Octane
   # Your code goes here...
-end
+end 
 
 require "octane/dataset"
 require "octane/neuron"
 require "octane/network"
+ 

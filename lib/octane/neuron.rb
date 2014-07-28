@@ -1,7 +1,7 @@
 module Octane
 	class Neuron
 		attr_accessor :delta
-		attr_accessor :input_weights
+		attr_accessor :input_weights, :weight_changes
 		attr_accessor :name
 		attr_accessor :last_activity, :last_squashed
 		attr_reader :type
@@ -14,7 +14,7 @@ module Octane
 						   :tanh=> ->(x){Math.tanh(x)}}
 		SQUASH_DERIVATIVES={:sigmoid => ->(y){ y*(1-y)}, :linear => ->(y) {1}, :tanh => ->(y){1-y*y}}
  
-		def initialize(neuron_type=:sigmoid, name="unnamed neuron..")
+		def initialize(neuron_type=:tanh, name="unnamed neuron..")
 			@type=neuron_type
 			@delta=0
 			@last_activity=0
@@ -22,10 +22,15 @@ module Octane
 			@disabled_inputs=[]
 			@disabled=false
 			@name=name
+			@weight_changes=[]
+		end
+
+		def inputs
+			@input_weights[0..-2]
 		end
 
 		def to_s
-			return "<# #{self.class} #{self.name} Input weights: #{self.input_weights}> "
+			return "<# #{self.class} #{self.name} Input weights: #{self.input_weights}, Pending weight changes: #{self.weight_changes}> "
 		end
  
 		def output(values)
