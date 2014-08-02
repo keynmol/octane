@@ -48,4 +48,37 @@ module Octane
 			end
 		end
 	end
+
+	class RegressionDataset < Dataset; end
+	
+	class ClassificationDataset < Dataset
+		def initialize(labels)
+			super()
+			n=labels.size
+			zeroes=[0.0]*n
+
+			@labels=Hash[n.times.map {|lab|  a=zeroes.clone; a[lab]=1.0; [labels[lab],a]}]
+		end
+
+		def add_sample sample, expected
+			@dataset<<[sample, @labels[expected]]
+		end
+
+		def split(train=0.9)
+			train=(0.9*@dataset.size).to_i
+
+			rnd=@dataset.shuffle
+			train_data=rnd[0...train]
+			test_data=rnd[train..rnd.size]
+
+			train_dataset=ClassificationDataset.new(@labels.keys)
+			train_dataset.data=train_data
+
+			test_dataset=ClassificationDataset.new(@labels.keys)
+			test_dataset.data=test_data
+
+			[train_dataset, test_dataset]
+		end
+	end
+
 end
