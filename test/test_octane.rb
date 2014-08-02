@@ -239,8 +239,8 @@ class TestOctane < MiniTest::Unit::TestCase
 	# end
 
 	def test_autoencoder
-		input_size=10
-		rep_size=4
+		input_size=100
+		rep_size=25
 
 		@autoencoder=AutoEncoder.new(input_size, rep_size, false, 
 									learning_rate: 0.01, 
@@ -254,7 +254,7 @@ class TestOctane < MiniTest::Unit::TestCase
 		@test_set=Dataset.new
 		before_training=0.0
 
-		500.times do |i|
+		1000.times do |i|
 			before_training=@autoencoder.test(@test_set) if i==100
 
 			input=generate_input[]
@@ -271,11 +271,9 @@ class TestOctane < MiniTest::Unit::TestCase
 	end
 
 	def test_denoising_autoencoder
-		input_size=10
-		rep_size=4
+		input_size=100
+		rep_size=25
 		corrupt=0.5
-
-		srand 12345
 
 		@autoencoder=AutoEncoder.new(input_size, rep_size, false, 
 									learning_rate: 0.01, 
