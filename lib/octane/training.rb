@@ -30,6 +30,8 @@ def train_defaults(options)
 
 		def train_one(sample, options={})
 			example, expected_output=sample
+			example=@input_transformation[example] if @input_transformation
+
 			options[:epochs]||=1
 			example_error=0
 			options[:epochs].times do |epoch|
@@ -43,6 +45,7 @@ def train_defaults(options)
 
 		def train_batch(batch, options={})
 			batch.each do |example, expected_output|
+				example=@input_transformation[example] if @input_transformation
 				network_output=forward_pass(example)
 				example_error=calculate_errors(network_output, expected_output)
 				calculate_weight_changes

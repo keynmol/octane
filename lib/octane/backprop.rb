@@ -49,11 +49,21 @@ module Backpropagation
 			@learning_rate
 		end
 
+		include Math
+
+		def norm(vec)
+			sqrt(vec.map{|x| x*x}.inject(:+))
+		end
+
 		def apply_weight_changes(batch_size=1)
 			(1..@layers.size-1).each do |layer|
 				@layers[layer].each_with_index do |neuron, index|
 					puts "AWC: Neuron #{index} on layer #{layer}. Accumulated weight changes: #{neuron.weight_changes}" if verbose
+					
 					neuron.input_weights=neuron.input_weights.zip(neuron.weight_changes).map{|old, derivative| old*(1-@weight_decay) - (learning_rate/batch_size) * derivative}
+					if @weight_norm  and (nrm=norm(neuron.input_weights)) > @weight_norm
+						neuron.input_weights.map!{|w| w/nrm}
+					end
 					neuron.weight_changes=Array.new(neuron.weight_changes.length,0.0)
 				end
 			end

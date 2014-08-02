@@ -13,4 +13,4 @@ require "octane/plotting"
 require "octane/construct"
 require "octane/neuron"
 require "octane/network"
- 
+require "octane/autoencoder"

@@ -41,21 +41,21 @@ module Octane
 	class Network
 		attr_accessor :layers
 		attr_accessor :verbose
+		attr_accessor :input_transformation
 
 		include Dropout
 		include Backpropagation
 		include Test
 		include Training
 		include Plotting
+		include Construct
 
-		def initialize(learning_rate=1, weight_decay=0.0)
+		def initialize(learning_rate=1, weight_decay=0.0, weight_norm=nil)
 			@layers=[]
 			@learning_rate=learning_rate
 			@weight_decay=weight_decay
+			@weight_norm=weight_norm
 		end
-	 
-	
-
 	 
 		def forward_pass(input)
 			previous_layer=nil
