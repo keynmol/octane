@@ -6,6 +6,16 @@ module Backpropagation
 			}
 			puts "COD: Deltas: #{output_deltas}" if @verbose
 		end
+
+		def sign(w)
+			if w<0
+				-1.0
+			elsif w>0
+				1.0
+			else
+				0.0
+			end
+		end
 	 
 		def calculate_errors(network_output, expected_output)
 			
@@ -35,10 +45,10 @@ module Backpropagation
 				@layers[layer].each_with_index{ |neuron,index|
 					unless neuron.disabled
 						weight_changes=@layers[previous_layer].each_index.map{|d| neuron.input_disabled?(d) ? 0.0 : (@layers[previous_layer][d].last_squashed * neuron.delta)}
-						bias_change = neuron.delta
+						bias_change = add_bias ? [neuron.delta] : []
 						puts "CWC: Neuron #{index} on layer #{layer}. Incoming weight changes: #{weight_changes}" if @verbose
 						puts "CWC: Neuron #{index} on layer #{layer}. Current weight changes: #{neuron.weight_changes.inspect}" if @verbose
-						neuron.weight_changes=neuron.weight_changes.zip(weight_changes+[bias_change]).map {|a,b| a+b}
+						neuron.weight_changes=neuron.weight_changes.zip(weight_changes+bias_change).map {|a,b| a+b}
 						puts "CWC: Neuron #{index} on layer #{layer}. Modified weight changes: #{neuron.weight_changes.inspect}" if @verbose
 					end
 				}
@@ -58,13 +68,19 @@ module Backpropagation
 		def apply_weight_changes(batch_size=1)
 			(1..@layers.size-1).each do |layer|
 				@layers[layer].each_with_index do |neuron, index|
-					puts "AWC: Neuron #{index} on layer #{layer}. Accumulated weight changes: #{neuron.weight_changes}" if verbose
-					
-					neuron.input_weights=neuron.input_weights.zip(neuron.weight_changes).map{|old, derivative| old*(1-@weight_decay) - (learning_rate/batch_size) * derivative}
-					if @weight_norm  and (nrm=norm(neuron.input_weights)) > @weight_norm
-						neuron.input_weights.map!{|w| w/nrm}
+					unless neuron.disabled
+						puts "AWC: Neuron #{index} on layer #{layer}. Accumulated weight changes: #{neuron.weight_changes}. Old weights: #{neuron.input_weights}" if verbose
+						
+						neuron.input_weights=neuron.input_weights.zip(neuron.weight_changes).map{|old, derivative| old*(1-@weight_decay) - (learning_rate/batch_size) * derivative+@pruning*sign(old)}
+
+						puts "AWC: Neuron #{index} on layer #{layer}. Accumulated weight changes: #{neuron.weight_changes}. New weights: #{neuron.input_weights}" if verbose
+						
+						if @weight_norm!=0.0  and (nrm=norm(neuron.input_weights)) > @weight_norm
+							neuron.input_weights.map!{|w| w/nrm}
+						end
+
+						neuron.weight_changes=Array.new(neuron.weight_changes.length,0.0)
 					end
-					neuron.weight_changes=Array.new(neuron.weight_changes.length,0.0)
 				end
 			end
 		end

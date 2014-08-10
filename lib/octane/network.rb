@@ -50,11 +50,17 @@ module Octane
 		include Plotting
 		include Construct
 
-		def initialize(learning_rate=1, weight_decay=0.0, weight_norm=nil)
+		def initialize(opts={})
 			@layers=[]
-			@learning_rate=learning_rate
-			@weight_decay=weight_decay
-			@weight_norm=weight_norm
+			@learning_rate=opts[:learning_rate]|| 0.001
+			@weight_decay=opts[:weight_decay] || 0.0
+			@weight_norm=opts[:weight_norm] || 0.0
+			@bias=opts[:bias].nil? ? true : opts[:bias]
+			@pruning=opts[:pruning]||0.0
+		end
+
+		def add_bias
+			@bias
 		end
 	 
 		def forward_pass(input)
@@ -63,7 +69,8 @@ module Octane
 				if layer_number==0
 					previous_layer=@layers[0].each_with_index.map{|input_neuron, input_neuron_number| input_neuron.set_squashed(input[input_neuron_number]);  input_neuron.disabled ? 0.0 : input[input_neuron_number] }
 				else			
-					cl=previous_layer.clone+[0.0] # add bias
+					cl=previous_layer.clone
+					cl+=[0.0] if add_bias
 					layer_outputs=layer.each_with_index.map{|neuron, index| 
 														outp=neuron.output(cl)
 														puts "Calculating output of neuron #{index} on layer #{layer_number}. Inputs: #{cl}. Output: #{outp}" if @verbose; 

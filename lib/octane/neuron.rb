@@ -1,7 +1,7 @@
 module Octane
 	class Neuron
 		attr_accessor :delta
-		attr_accessor :input_weights, :weight_changes
+		attr_accessor :input_weights, :weight_changes, :disabled_inputs
 		attr_accessor :name
 		attr_accessor :last_activity, :last_squashed
 		attr_reader :type
@@ -39,7 +39,7 @@ module Octane
 			end
  
 			@last_activity=(0...@input_weights.length).map{|input|
-				input_disabled?(input) ? 0.0 : values[input]*@input_weights[input]
+				values[input]*@input_weights[input]* (1-@disabled_inputs[input])
 			}.reduce(:+)
  
 			@last_squashed=squash(@last_activity)
@@ -55,20 +55,36 @@ module Octane
 		end
 
 		def ensure_disabled(input)
-			unless @disabled_inputs.include?(input)
-				@disabled_inputs<<input
+			unless input_disabled?(input)
+				disable_input(input)
 			end
 		end
 
+		def disable_input(id)
+			@disabled_inputs[id]=1
+		end
+
+		def enable_input(id)
+			@disabled_inputs[id]=0
+		end
+
 		def ensure_enabled(input)
-			if @disabled_inputs.include?(input)
-				@disabled_inputs.delete(input)
+			if input_disabled?(input)
+				enable_input(input)
 			end
 		end
 
 		def input_disabled?(input)
-			return @disabled_inputs.include?(input)
+			return @disabled_inputs[input]==1
 		end
+
+		def clone
+			n=Neuron.new(@type)
+			n.input_weights=@input_weights.clone
+			n.disabled_inputs=@disabled_inputs.clone
+			n
+		end
+
 	end
 
 	class InputNeuron < Neuron

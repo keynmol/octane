@@ -13,10 +13,13 @@ module Construct
 
 				layer.each {|neuron|
 					neuron.input_weights=Array.new(arity) {lims*(2.0*rand-1.0) }
-					neuron.input_weights << 0.0
+					neuron.input_weights << 0.0 if add_bias
+
+					neuron.disabled_inputs=Array.new(arity,0)
+					neuron.disabled_inputs << 0 if add_bias
 
 					neuron.weight_changes=Array.new(arity,0.0)
-					neuron.weight_changes << 0.0
+					neuron.weight_changes << 0.0 if add_bias
 				}
 			end
 		end

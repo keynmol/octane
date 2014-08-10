@@ -31,22 +31,22 @@ class TestOctane < MiniTest::Unit::TestCase
 		end
 	end
 
-	def test_that_network_learns
-		before_training=@single_layer.test(@test_dataset)
-		@single_layer.train(@train_dataset)
-		after_training=@single_layer.test(@test_dataset)
+	# def test_that_network_learns
+	# 	before_training=@single_layer.test(@test_dataset)
+	# 	@single_layer.train(@train_dataset)
+	# 	after_training=@single_layer.test(@test_dataset)
 
-		puts "Single layer: Before: #{before_training}, after: #{after_training}"
-		assert_operator before_training, :> , after_training
+	# 	puts "Single layer: Before: #{before_training}, after: #{after_training}"
+	# 	assert_operator before_training, :> , after_training
 
-		before_training=@multi_layer.test(@test_dataset)
-		@multi_layer.train(@train_dataset)
-		after_training=@multi_layer.test(@test_dataset)
+	# 	before_training=@multi_layer.test(@test_dataset)
+	# 	@multi_layer.train(@train_dataset)
+	# 	after_training=@multi_layer.test(@test_dataset)
 		
-		puts "Multi-layered: Before: #{before_training}, after: #{after_training}"
-		assert_operator before_training, :> , after_training
+	# 	puts "Multi-layered: Before: #{before_training}, after: #{after_training}"
+	# 	assert_operator before_training, :> , after_training
 
-	end
+	# end
 
 	def test_disabling_units
 		@single_layer.hidden_layer.disable(0)
@@ -61,6 +61,7 @@ class TestOctane < MiniTest::Unit::TestCase
 		@single_layer.hidden_layer.enable(0)
 		refute @single_layer.hidden_layer.unit(0).disabled
 
+
 		before_training=@single_layer.hidden_layer.unit(0).input_weights
 		@single_layer.train(@train_dataset)
 		after_training=@single_layer.hidden_layer.unit(0).input_weights
@@ -69,13 +70,13 @@ class TestOctane < MiniTest::Unit::TestCase
 	end
 
 	def test_that_dropout_works
-		no_dropout_nn=Network.new 0.01
+		no_dropout_nn=Network.new learning_rate: 0.01
 		no_dropout_nn.add_layer(2)
 		no_dropout_nn.add_layer(10)
 		# no_dropout_nn.add_layer(100)
 		no_dropout_nn.add_layer(1, :linear)
 
-		dropout_nn=Network.new 0.01
+		dropout_nn=Network.new learning_rate: 0.01
 		dropout_nn.add_layer(2)
 		dropout_nn.add_layer(10)
 		# dropout_nn.add_layer(100)
@@ -107,7 +108,7 @@ class TestOctane < MiniTest::Unit::TestCase
 	def test_batch_learning
 
 		
-		@net=Network.new(0.1)
+		@net=Network.new(learning_rate: 0.1)
 		@net.add_layer(2)
 		@net.add_layer(4)
 		@net.add_layer(1)
@@ -133,7 +134,6 @@ class TestOctane < MiniTest::Unit::TestCase
 	end
 
 	def test_computation
-		srand 1234
 
 		@net=Network.new
 		@net.add_layer(3)
@@ -169,7 +169,7 @@ class TestOctane < MiniTest::Unit::TestCase
 
 		train_dataset, test_dataset=dataset.split(0.7)
 
-		@net=Network.new(0.1, 0.0001)
+		@net=Network.new learning_rate: 0.1, weight_decay: 0.0001
 		@net.add_layer(4)
 		@net.add_layer(5)
 		@net.add_layer(3, :sigmoid)
@@ -193,7 +193,7 @@ class TestOctane < MiniTest::Unit::TestCase
 	end
 
 	def test_weight_norm
-		@net=Network.new(0.1, 0.00, 5)
+		@net=Network.new learning_rate: 0.1, weight_norm: 5
 		@net.add_layer(2)
 		@net.add_layer(4)
 		@net.add_layer(1,:linear)
@@ -216,7 +216,7 @@ class TestOctane < MiniTest::Unit::TestCase
 		input_size=100
 		rep_size=25
 
-		@autoencoder=AutoEncoder.new(input_size, rep_size, false, 
+		@autoencoder=AutoEncoder.new(input_size, rep_size,
 									learning_rate: 0.01, 
 									weight_decay: 0.00001, 
 									code_layer_type: :tanh, 
@@ -249,7 +249,7 @@ class TestOctane < MiniTest::Unit::TestCase
 		rep_size=25
 		corrupt=0.5
 
-		@autoencoder=AutoEncoder.new(input_size, rep_size, false, 
+		@autoencoder=AutoEncoder.new(input_size, rep_size, 
 									learning_rate: 0.01, 
 									weight_decay: 0.0001, 
 									code_layer_type: :tanh, 
@@ -279,5 +279,80 @@ class TestOctane < MiniTest::Unit::TestCase
 		after_training=@autoencoder.test(@test_set)
 
 		assert_operator before_training, :>, after_training
+	end
+
+	def test_no_bias
+		a=Network.new bias: false
+		a.add_layer 2
+		a.add_layer 1, :linear
+
+		a.train_one([[1,2], [1]])
+
+		result=a.forward_pass([1,2])
+		assert_equal a.output_layer.unit(0).input_weights.length, 2
+		
+		expected_value=a.output_layer.unit(0).input_weights.zip([1,2]).map {|a,b| a*b}.reduce(:+)
+
+		assert_equal result, [expected_value]
+	end
+
+	def test_sparse_autoencoder
+		input_size=1
+		rep_size=3
+		@autoencoder=AutoEncoder.new(input_size, rep_size, 
+									learning_rate: 0.01, 
+									weight_decay: 0.00001, 
+									code_layer_type: :linear, 
+									output_layer_type: :linear,
+									bias: true)
+		10000.times do
+			input=input_size.times.map {rand 1.0..2.0}
+			@autoencoder.train_one(input, input)
+
+		end
+
+	end
+
+	def test_input_mask_autoencoder
+		input_size=100
+		rep_size=20
+		corrupt=0.5
+
+		mask=[1.0]*(input_size*(1-corrupt)).to_i+[0.0]*(input_size*corrupt).to_i
+
+		@autoencoder=AutoEncoder.new(input_size, rep_size,
+							learning_rate: 0.001, 
+							weight_decay: 0.0001, 
+							code_layer_type: :linear, 
+							output_layer_type: :linear,
+							bias: false,
+							input_mask: mask.shuffle)
+		
+		1000.times do
+			input=input_size.times.map {rand 0.0..1}
+			@autoencoder.train_one(input, input)
+			# puts @autoencoder.encode(input).inspect
+		end
+	end
+
+	def test_pruning
+		srand 12345
+		a=Network.new(pruning: 0.0)
+		a.add_layer 2
+		a.add_layer 3
+		a.add_layer 1
+
+		a.train_one([[0.5,0.5],[1]])
+
+		srand 12345
+		b=Network.new(pruning: 0.001)
+		b.add_layer 2
+		b.add_layer 3
+		b.add_layer 1
+
+		b.train_one([[0.5,0.5],[1]])
+
+		refute_equal a.output_layer.unit(0).input_weights, b.output_layer.unit(0).input_weights
+
 	end
 end
