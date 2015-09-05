@@ -25,20 +25,20 @@ require 'octane'
 
 include Octane # to make things clearer
 
-net=Network.new
+net = Network.new
 net.add_layer(2) # two inputs
 net.add_layer(5) # five hidden neurons
 net.add_layer(1) # one output
 
 function = ->(x,y) { Math.cos(x+y) } # let's try to approximate cosine of sum of two variables 
 
-test_dataset=Dataset.new
-train_dataset=Dataset.new
+test_dataset = Dataset.new
+train_dataset = Dataset.new
 
 # create two datasets, 100 and 10000 samples respectively
 [test_dataset, train_dataset].zip([100, 10000]).each do |dataset, samples| 
     samples.times do 
-        input=[rand, rand]
+        input = [rand, rand]
         dataset.add_sample(input, function[*input]) 
     end
 end
@@ -58,6 +58,7 @@ Make sure you have RMagick installed to run this example without errors. If not,
 ```ruby
 require 'octane'
 require 'RMagick'
+
 include Magick
 include Octane
 
